@@ -29,6 +29,8 @@ class DoorprizeSeeder extends Seeder
             'show_nip'           => '',
             'name_caption'       => 'tidak',
             'winner_refresh'     => '20',
+            'show_title'         => '1',
+            'name_case'          => 'asli',
             'lock_screen_menu'   => '',
         ] as $key => $value) {
             Setting::put($key, $value);

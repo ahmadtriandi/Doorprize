@@ -127,7 +127,7 @@ class PickController extends Controller
     public function bulk(Request $request, Prize $prize)
     {
         $request->validate([
-            'daftar' => ['required', 'string', 'max:20000'],
+            'daftar' => ['required', 'string', 'max:200000'],
             'ganti'  => ['nullable', 'boolean'],
         ], [], ['daftar' => 'daftar NIP']);
 

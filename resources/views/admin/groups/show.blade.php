@@ -96,6 +96,7 @@
           koma, titik koma, atau tab. Nama juga diterima, tetapi hanya kalau nama itu
           dimiliki satu orang saja — untuk sisanya pakai NIP agar tidak salah orang.
           NIP yang sudah ada di grup dilewati, jadi menempel ulang daftar yang sama aman.
+          Muat sekitar 25.000 NIP sekali tempel; kalau lebih, bagi jadi beberapa kali.
         </div>
       </div>
       <button class="tombol">Tambahkan semua</button>

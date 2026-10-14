@@ -41,6 +41,16 @@
 
   <div class="kotak">
     <h2>Judul dan logo</h2>
+    <div class="centang">
+      <input type="checkbox" id="show_title" name="show_title" value="1"
+             @checked($settings['show_title'] === null || $settings['show_title'])>
+      <label for="show_title">Tampilkan papan judul di tengah atas layar</label>
+    </div>
+    <div class="bantuan" style="margin-bottom:14px">
+      Matikan kalau judul acara sudah tercetak di gambar latar, supaya tidak tertulis
+      dua kali. Logo kiri dan kanan tetap tampil.
+    </div>
+
     <div class="baris">
       <div class="medan">
         <label for="event_title">Judul acara</label>
@@ -251,6 +261,26 @@
         detik supaya nama baru muncul tanpa disentuh, berguna kalau dipasang di layar kedua.
         Isi <strong>0</strong> untuk mematikannya sama sekali; penyegaran lalu hanya
         dilakukan lewat menu di pojok kiri bawah.
+      </div>
+    </div>
+
+    <div class="medan">
+      <label for="name_case">Penulisan nama peserta</label>
+      <select id="name_case" name="name_case" required>
+        <option value="asli" @selected(($settings['name_case'] ?: 'asli') === 'asli')>
+          Apa adanya, sesuai data peserta
+        </option>
+        <option value="kapital" @selected($settings['name_case'] === 'kapital')>
+          KAPITAL SEMUA
+        </option>
+        <option value="awal" @selected($settings['name_case'] === 'awal')>
+          Awal Kata Besar
+        </option>
+      </select>
+      <div class="bantuan">
+        Berguna kalau data peserta berasal dari beberapa sumber sehingga penulisannya
+        campur — sebagian kapital semua, sebagian tidak. Pengaturan ini hanya mengubah
+        tampilan di layar; data aslinya tidak berubah.
       </div>
     </div>
 

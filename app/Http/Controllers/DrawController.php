@@ -19,6 +19,8 @@ class DrawController extends Controller
     {
         return [
                 'title'      => Setting::get('event_title', 'Excellent Together'),
+            'show_title' => Setting::get('show_title') === null ? true : (bool) Setting::get('show_title'),
+            'case'       => Setting::get('name_case', 'asli'),
                 'subtitle'   => Setting::get('event_subtitle', 'Doorprize'),
                 'background' => Setting::get('background_path'),
                 'bg_color'   => Setting::get('background_color', '#8B5CF6'),

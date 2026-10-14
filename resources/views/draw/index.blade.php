@@ -1,4 +1,13 @@
 @php
+  /** Penulisan nama mengikuti pengaturan: apa adanya, kapital, atau awal kata besar. */
+  $tulis = function ($nama) use ($settings) {
+      return match ($settings['case']) {
+          'kapital' => mb_strtoupper($nama, 'UTF-8'),
+          'awal'    => mb_convert_case(mb_strtolower($nama, 'UTF-8'), MB_CASE_TITLE, 'UTF-8'),
+          default   => $nama,
+      };
+  };
+
   /** Keterangan kecil di bawah nama, mengikuti pengaturan panitia. */
   $ket = function ($p) use ($settings) {
       return match ($settings['caption']) {
@@ -98,6 +107,13 @@
     height:18vh;max-height:180px;background:#fff;border-radius:10px;padding:8px;
     box-shadow:0 10px 0 rgba(0,0,0,.18);object-fit:contain;
   }
+  /* Foto hadiah berformat PNG ditampilkan tanpa bingkai putih supaya menyatu
+     dengan latar layar. Bayangannya memakai drop-shadow agar mengikuti bentuk
+     produknya, bukan kotak pembungkusnya. */
+  .hadiah img.transparan{
+    background:none;padding:0;border-radius:0;box-shadow:none;
+    filter:drop-shadow(0 12px 16px rgba(0,0,0,.5));
+  }
   .hadiah .kosong{height:18vh;max-height:180px;aspect-ratio:1;background:rgba(255,255,255,.5);border:3px dashed #fff;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;padding:12px;text-align:center}
   .pita{
     margin-top:14px;min-width:min(660px,86vw);text-align:center;
@@ -146,15 +162,23 @@
     --ukuran-nama:clamp(22px,3.4vw,42px);
   }
   .slot{
-    min-width:0;min-height:96px;
+    min-width:0;min-height:0;
     background:rgba(255,255,255,.95);border:4px solid var(--kuning);border-radius:16px;
-    display:grid;place-content:center;padding:14px 22px;text-align:center;
-    box-shadow:0 8px 0 rgba(0,0,0,.2);
+    display:grid;place-content:center;padding:10px 18px;text-align:center;
+    overflow:hidden;box-shadow:0 8px 0 rgba(0,0,0,.2);
   }
+  /* Undian puluhan pemenang sekaligus: bingkai dan bantalan dikecilkan supaya
+     ruang terpakai untuk nama, bukan untuk hiasan kartu. */
+  .papan.padat{gap:8px}
+  .papan.padat .slot{border-width:2px;border-radius:9px;padding:4px 10px;box-shadow:0 3px 0 rgba(0,0,0,.18)}
+  .papan.padat .slot .unit{font-size:11px;margin-top:1px;min-height:0}
+  .papan.padat .slot .tunggu{font-size:11px;letter-spacing:.1em}
+  .papan.padat .slot.menang{transform:none}
   .slot .isi{
-    font-size:var(--ukuran-nama);font-weight:800;color:#4C1D95;line-height:1.15;
+    font-size:var(--ukuran-nama);font-weight:800;color:#4C1D95;line-height:1.2;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
   }
+  .papan.padat .slot .isi{line-height:1.1}
   .slot .unit{font-size:14px;font-weight:500;color:#7C3AED;margin-top:4px;min-height:18px}
   .slot .tunggu{font-size:15px;font-weight:600;color:#A78BFA;letter-spacing:.18em;text-transform:uppercase}
   .slot{transition:transform .2s ease-out,border-color .2s}
@@ -277,10 +301,14 @@
       @endif
     </div>
 
-    <div class="judul">
-      <b>{{ $settings['title'] }}</b>
-      <span>{{ $settings['subtitle'] }}</span>
-    </div>
+    @if($settings['show_title'])
+      <div class="judul">
+        <b>{{ $settings['title'] }}</b>
+        <span>{{ $settings['subtitle'] }}</span>
+      </div>
+    @else
+      <div></div>
+    @endif
 
     <div>
       @if($settings['logo_right'])
@@ -292,7 +320,8 @@
   @if($prize)
     <section class="hadiah">
       @if($prize->image_url)
-        <img src="{{ $prize->image_url }}" alt="{{ $prize->name }}">
+        <img src="{{ $prize->image_url }}" alt="{{ $prize->name }}"
+             class="{{ str_ends_with(strtolower($prize->image_path), '.png') ? 'transparan' : '' }}">
       @else
         <div class="kosong">Belum ada foto hadiah</div>
       @endif
@@ -310,7 +339,7 @@
       <main class="daftar" id="daftar">
         @forelse($participants as $p)
           <div class="nama" data-id="{{ $p->id }}">
-            {{ $p->name }}
+            {{ $tulis($p->name) }}
             @if($baris = $ket($p))<small>{{ $baris }}</small>@endif
           </div>
         @empty
@@ -447,6 +476,16 @@
   const autoStop = {{ $settings['auto_stop'] ? 'true' : 'false' }};
   const durasi   = {{ $durasiPutar }};
   const caption  = @json($settings['caption']); // 'tidak', 'nip', 'unit', atau 'keduanya'
+  const gayaNama = @json($settings['case']);    // 'asli', 'kapital', atau 'awal'
+
+  /** Penulisan nama disamakan dengan yang dipakai papan daftar. */
+  function tulisNama(nama) {
+    if (gayaNama === 'kapital') return nama.toUpperCase();
+    if (gayaNama === 'awal') {
+      return nama.toLowerCase().replace(/(^|[\s'-])(\p{L})/gu, (_, pemisah, huruf) => pemisah + huruf.toUpperCase());
+    }
+    return nama;
+  }
   const url      = @json($urlUndi);
   const namaHadiah = @json($prize->name);
   const kuota    = {{ (int) $prize->quota }};
@@ -591,6 +630,10 @@
 
   let timer = null, timerAuto = null, aktif = null, berputar = false;
 
+  // Pemenang yang sedang terpampang di papan. Disimpan supaya penataan ulang
+  // layar tidak menghapus nama yang sudah diumumkan.
+  let pemenangTampil = null;
+
   // Hasil undian yang sudah dipesan ke server saat Start ditekan.
   let hasilTertunda = null;
 
@@ -613,48 +656,103 @@
 
   /* ---------- papan kosong ---------- */
 
+  /**
+   * Cari susunan kolom-baris yang membuat nama sebesar mungkin tanpa keluar layar.
+   *
+   * Undian 1 pemenang dan undian 50 pemenang butuh susunan yang sangat berbeda,
+   * jadi setiap kemungkinan jumlah kolom dicoba lalu diambil yang menghasilkan
+   * huruf terbesar. Cara ini menggantikan angka kolom tetap yang selalu meleset
+   * di salah satu ujungnya.
+   */
+  function tataSlot(n) {
+    const padat = n > 12;
+    const gap = padat ? 8 : 16;
+    const lebarPapan = papan.clientWidth;
+    const tinggiPapan = papan.clientHeight;
+    const hurufTerpanjang = peserta.reduce((m, p) => Math.max(m, p.name.length), 8);
+
+    // Tinggi yang benar-benar tersisa untuk nama, setelah dikurangi bantalan,
+    // bingkai, dan baris keterangan. Tanpa perhitungan ini, huruf terlihat pas
+    // di atas kertas tetapi terpotong di layar.
+    const sisaTegak = (padat ? 8 : 20) + (padat ? 4 : 8) + (caption === 'tidak' ? 0 : padat ? 14 : 20);
+    const sisaMendatar = padat ? 24 : 44;
+
+    const batasKolom = kolomAtur === 'auto'
+      ? Math.min(12, n)
+      : Math.max(1, Math.min(kolomAtur, n));
+
+    let terbaik = null;
+
+    for (let k = 1; k <= batasKolom; k++) {
+      const baris = Math.ceil(n / k);
+      const lebarSel = (lebarPapan - (k - 1) * gap) / k;
+      const tinggiSel = (tinggiPapan - (baris - 1) * gap) / baris;
+
+      if (lebarSel < 150 || tinggiSel - sisaTegak < 14) continue;
+
+      const muatLebar = (lebarSel - sisaMendatar) / (hurufTerpanjang * 0.56);
+      const muatTinggi = (tinggiSel - sisaTegak) / 1.2;
+      const ukuran = Math.min(muatLebar, muatTinggi, n === 1 ? 58 : 46);
+
+      if (!terbaik || ukuran > terbaik.ukuran) {
+        terbaik = { kolom: k, baris, ukuran, tinggiSel };
+      }
+    }
+
+    // Kalau tidak ada susunan yang muat, pakai kolom terbanyak dan biarkan digulir.
+    if (!terbaik) {
+      const kolom = batasKolom;
+      terbaik = { kolom, baris: Math.ceil(n / kolom), ukuran: 15, tinggiSel: 40 };
+    }
+
+    terbaik.padat = padat;
+    terbaik.ukuran = Math.max(13, Math.floor(terbaik.ukuran));
+
+    // Tinggi kartu dikunci di angka ini supaya kotak tidak berubah ukuran
+    // antara sebelum Start, saat berputar, dan setelah Stop.
+    terbaik.tinggiKartu = Math.round(terbaik.ukuran * 1.2 + sisaTegak);
+
+    return terbaik;
+  }
+
   function gambarSlot(n) {
     if (!papan) return;
 
-    // Tidak pernah lebih banyak dari jumlah pemenang, supaya satu pemenang
-    // tetap tampil besar di tengah dan tidak menyisakan kolom kosong.
-    // Pada mode otomatis, kolom pemenang mengikuti jumlah pemenang tetapi
-    // dibatasi empat supaya kartunya tidak mengecil berlebihan.
-    const lebar = kolomAtur === 'auto'
-      ? Math.max(1, Math.min(4, n))
-      : Math.max(1, Math.min(kolomAtur, n));
+    pemenangTampil = null;
+    papan.style.maxWidth = 'none';
+    papan.classList.remove('padat');
 
-    // Papan tidak dipaksa selebar layar. Tiap kolom punya lebar ideal sekitar
-    // 620 px, jadi undian satu orang tampil sebagai satu kartu proporsional di
-    // tengah layar, bukan kotak memanjang dari ujung ke ujung.
-    papan.style.gridTemplateColumns = `repeat(${lebar},minmax(0,1fr))`;
-    papan.style.maxWidth = Math.min(1920, lebar * 620) + 'px';
-    papan.style.setProperty('--ukuran-nama', ukuranSlot(lebar) + 'px');
+    const tata = tataSlot(n);
+    const padat = tata.padat;
+
+    papan.classList.toggle('padat', padat);
+    papan.style.gridTemplateColumns = `repeat(${tata.kolom},minmax(0,1fr))`;
+
+    // Sedikit pemenang: tinggi baris dipatok agar kotak tetap sama besar di
+    // ketiga keadaan, lalu seluruhnya dipusatkan di tengah papan.
+    // Banyak pemenang: baris dibagi rata agar semua kartu muat sekali layar.
+    papan.style.gridTemplateRows = padat
+      ? `repeat(${tata.baris},minmax(0,1fr))`
+      : `repeat(${tata.baris},${tata.tinggiKartu}px)`;
+    papan.style.alignContent = padat ? 'stretch' : 'center';
+
+    papan.style.setProperty('--ukuran-nama', tata.ukuran + 'px');
+
+    // Untuk pemenang sedikit, papan dibatasi agar kartunya tidak melebar dari
+    // ujung ke ujung. Untuk pemenang banyak, seluruh lebar layar dipakai.
+    papan.style.maxWidth = n <= 4 ? Math.min(1920, tata.kolom * 620) + 'px' : 'none';
 
     papan.innerHTML = '';
     for (let i = 0; i < n; i++) {
       const slot = document.createElement('div');
       slot.className = 'slot';
-      slot.innerHTML = '<div class="tunggu">Menunggu undian</div>';
+      slot.innerHTML = padat ? '<div class="tunggu">—</div>' : '<div class="tunggu">Menunggu undian</div>';
       papan.appendChild(slot);
     }
 
-    // Kalau barisnya melebihi tinggi layar, isi dirapatkan ke atas supaya
-    // baris pertama tidak terpotong dan seluruhnya bisa digulir.
-    papan.style.alignContent = papan.scrollHeight > papan.clientHeight ? 'start' : 'center';
-  }
-
-  /**
-   * Ukuran huruf kolom pemenang dihitung dari lebar kolom dan nama terpanjang,
-   * bukan dari nilai tetap, supaya nama sepanjang apa pun tetap utuh dan tidak
-   * berkedip berubah ukuran saat nama berganti cepat.
-   */
-  function ukuranSlot(lebar) {
-    const lebarKolom = (papan.clientWidth - (lebar - 1) * 16) / lebar;
-    const hurufTerpanjang = peserta.reduce((n, p) => Math.max(n, p.name.length), 8);
-    const muat = (lebarKolom - 48) / (hurufTerpanjang * 0.56);
-
-    return Math.max(15, Math.min(lebar === 1 ? 54 : 40, Math.floor(muat)));
+    if (papan.scrollHeight > papan.clientHeight) {
+      papan.style.alignContent = 'start';
+    }
   }
 
   /** Keterangan di bawah nama pemenang, mengikuti pengaturan yang sama. */
@@ -668,8 +766,35 @@
   function isiSlot(slot, orang, kelas, kabur = 0) {
     slot.className = 'slot' + (kelas ? ' ' + kelas : '');
     const bawah = keterangan(orang);
-    slot.innerHTML = `<div class="isi">${orang.name}</div><div class="unit">${bawah || ''}</div>`;
+    slot.innerHTML = papan.classList.contains('padat') && !bawah
+      ? `<div class="isi">${tulisNama(orang.name)}</div>`
+      : `<div class="isi">${tulisNama(orang.name)}</div><div class="unit">${bawah || ''}</div>`;
     slot.style.filter = kabur > 0.05 ? `blur(${kabur.toFixed(2)}px)` : '';
+
+    // Hanya saat nama pemenang ditampilkan. Selama berputar cepat pengukuran
+    // ini akan membuat huruf berkedip berubah ukuran dan memberatkan animasi.
+    if (kelas === 'menang') paskanKartu(slot);
+  }
+
+  /**
+   * Kecilkan huruf satu kartu sampai namanya muat utuh.
+   *
+   * Ukuran dari tataSlot dihitung memakai nama terpanjang secara perkiraan,
+   * jadi nama yang jauh lebih panjang dari rata-rata masih bisa terpotong.
+   * Di sini lebarnya diukur sungguhan lalu dikecilkan seperlunya.
+   */
+  function paskanKartu(slot) {
+    const isi = slot.querySelector('.isi');
+    if (!isi) return;
+
+    let ukuran = parseFloat(getComputedStyle(papan).getPropertyValue('--ukuran-nama')) || 20;
+    isi.style.fontSize = ukuran + 'px';
+
+    let langkah = 0;
+    while (isi.scrollWidth > isi.clientWidth && ukuran > 11 && langkah++ < 40) {
+      ukuran -= 1;
+      isi.style.fontSize = ukuran + 'px';
+    }
   }
 
   /** Semakin cepat putaran, semakin kabur teksnya. */
@@ -836,6 +961,7 @@
 
     Suara.mulai();
     hentikanGulir();
+    pemenangTampil = null;
 
     if (saatUndi === 'start') {
       hasilTertunda = mintaHasil().catch(() => ({ ok: false, message: 'Koneksi ke server terputus. Periksa jaringan lalu ulangi undian.' }));
@@ -895,6 +1021,9 @@
   /** Semua kolom berhenti dan terbuka serentak di nama pemenang. */
   function bukaSlot(pemenang) {
     if (semuaSlot().length !== pemenang.length) gambarSlot(pemenang.length);
+
+    pemenangTampil = pemenang;
+
     semuaSlot().forEach((kolom, i) => {
       if (pemenang[i]) isiSlot(kolom, pemenang[i], 'menang', 0);
     });
@@ -957,7 +1086,7 @@
 
   function umumkan(pemenang, sisa) {
     const daftarNama = pemenang.map(w =>
-      `<div class="menang">${w.name}${keterangan(w) ? `<small>${keterangan(w)}</small>` : ''}</div>`
+      `<div class="menang">${tulisNama(w.name)}${keterangan(w) ? `<small>${keterangan(w)}</small>` : ''}</div>`
     ).join('');
 
     kartu.innerHTML = `
@@ -1008,11 +1137,28 @@
   /* ---------- pemasangan ---------- */
 
   let tundaPas = null;
+  let ukuranJendela = window.innerWidth + 'x' + window.innerHeight;
+
   window.addEventListener('resize', () => {
+    // Menggulir halaman ikut memicu resize di sebagian browser. Tanpa
+    // pemeriksaan ini, papan digambar ulang dan nama pemenang yang sudah
+    // diumumkan ikut terhapus.
+    const sekarang = window.innerWidth + 'x' + window.innerHeight;
+    if (sekarang === ukuranJendela) return;
+    ukuranJendela = sekarang;
+
     clearTimeout(tundaPas);
     tundaPas = setTimeout(() => {
       paskanDaftar();
-      if (mode === 'kosong' && !berputar) {
+
+      if (mode !== 'kosong' || berputar) return;
+
+      if (pemenangTampil) {
+        // Disalin dulu karena gambarSlot mengosongkan penanda ini.
+        const tampilLagi = pemenangTampil;
+        gambarSlot(tampilLagi.length);
+        bukaSlot(tampilLagi);
+      } else {
         gambarSlot(Math.min(Number(jumlah.value) || 1, Math.max(1, peserta.length)));
       }
     }, 150);

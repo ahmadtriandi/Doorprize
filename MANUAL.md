@@ -232,6 +232,10 @@ Tanpa gambar latar, layar memakai warna pilihan Anda dengan pola titik-titik baw
 Judul acara, anak judul, serta logo kiri dan kanan. Logo sebaiknya berformat PNG
 dengan latar transparan.
 
+Papan judul di tengah atas layar bisa dimatikan lewat centang **Tampilkan papan judul**.
+Berguna kalau judul acara sudah tercetak di gambar latar sehingga tidak tertulis dua kali;
+logo kiri dan kanan tetap tampil.
+
 ### Aturan undian
 
 **Tata letak layar**
@@ -295,6 +299,7 @@ Nama pemenang otomatis dibawa ke tengah layar saat undian berhenti.
 | Berhenti otomatis | Matikan agar putaran berlanjut sampai Stop ditekan |
 | Satu orang hanya boleh menang sekali | Pemenang lama tidak ikut undian hadiah berikutnya |
 | Keterangan di bawah nama | Tidak ada, NIP, unit kerja, atau keduanya |
+| Penulisan nama peserta | Apa adanya, KAPITAL SEMUA, atau Awal Kata Besar |
 | Kunci menu pindah undian | Ganti hadiah hanya bisa dilakukan panitia yang sudah login |
 
 ### Suara

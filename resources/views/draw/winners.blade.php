@@ -1,9 +1,25 @@
 @php
+  $tulis = function ($nama) use ($settings) {
+      return match ($settings['case']) {
+          'kapital' => mb_strtoupper($nama, 'UTF-8'),
+          'awal'    => mb_convert_case(mb_strtolower($nama, 'UTF-8'), MB_CASE_TITLE, 'UTF-8'),
+          default   => $nama,
+      };
+  };
+
   $jumlah = $winners->count();
 
-  // Kolom hanya bertambah kalau daftarnya panjang, supaya nama tetap besar
-  // saat pemenangnya sedikit.
-  $kolom = $jumlah <= 8 ? 1 : ($jumlah <= 20 ? 2 : ($jumlah <= 40 ? 3 : 4));
+  // Kolom bertambah mengikuti panjang daftar, supaya nama tetap besar saat
+  // pemenangnya sedikit dan tetap muat saat pemenangnya seratus lebih.
+  $kolom = match (true) {
+      $jumlah <= 8   => 1,
+      $jumlah <= 20  => 2,
+      $jumlah <= 40  => 3,
+      $jumlah <= 70  => 4,
+      $jumlah <= 110 => 5,
+      default        => 6,
+  };
+  $padat = $jumlah > 40;
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -70,6 +86,13 @@
     max-height:46vh;max-width:100%;background:#fff;border-radius:10px;padding:10px;
     box-shadow:0 10px 0 rgba(0,0,0,.18);object-fit:contain;
   }
+  /* Foto hadiah berformat PNG ditampilkan tanpa bingkai putih supaya menyatu
+     dengan latar layar. Bayangannya memakai drop-shadow agar mengikuti bentuk
+     produknya, bukan kotak pembungkusnya. */
+  .hadiah img.transparan{
+    background:none;padding:0;border-radius:0;box-shadow:none;
+    filter:drop-shadow(0 12px 16px rgba(0,0,0,.5));
+  }
   .hadiah .kosong{
     height:34vh;aspect-ratio:1;background:rgba(255,255,255,.5);border:3px dashed #fff;
     border-radius:10px;display:grid;place-items:center;color:#fff;font-size:14px;padding:14px;text-align:center;
@@ -103,13 +126,17 @@
     padding:10px 16px;display:flex;align-items:center;gap:14px;
     box-shadow:0 4px 0 rgba(0,0,0,.18);
   }
+  /* Daftar panjang: bingkai dirampingkan agar lebih banyak nama muat sebelum digulir. */
+  .padat .menang{border-width:2px;border-radius:8px;padding:5px 9px;gap:8px;box-shadow:0 2px 0 rgba(0,0,0,.16)}
+  .padat .menang .sub{font-size:11px}
+  .padat .daftar-menang{gap:6px 8px}
   .menang .nomor{
     flex-shrink:0;width:2em;height:2em;border-radius:50%;background:var(--ungu);color:#fff;
     display:grid;place-items:center;font-weight:800;font-size:.85em;
   }
   .menang .rincian{min-width:0}
   .menang .nama{
-    font-size:clamp(17px,{{ $kolom > 2 ? '1.3vw' : '1.9vw' }},{{ $kolom > 2 ? 26 : 34 }}px);
+    font-size:clamp({{ $kolom > 4 ? 13 : 17 }}px,{{ $kolom > 4 ? '0.95vw' : ($kolom > 2 ? '1.3vw' : '1.9vw') }},{{ $kolom > 4 ? 20 : ($kolom > 2 ? 26 : 34) }}px);
     font-weight:800;color:#4C1D95;line-height:1.2;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
@@ -169,10 +196,14 @@
       @endif
     </div>
 
-    <div class="judul">
-      <b>{{ $settings['title'] }}</b>
-      <span>Daftar Pemenang</span>
-    </div>
+    @if($settings['show_title'])
+      <div class="judul">
+        <b>{{ $settings['title'] }}</b>
+        <span>Daftar Pemenang</span>
+      </div>
+    @else
+      <div></div>
+    @endif
 
     <div>
       @if($settings['logo_right'])
@@ -184,7 +215,8 @@
   @if($prize)
     <section class="hadiah">
       @if($prize->image_url)
-        <img src="{{ $prize->image_url }}" alt="{{ $prize->name }}">
+        <img src="{{ $prize->image_url }}" alt="{{ $prize->name }}"
+             class="{{ str_ends_with(strtolower($prize->image_path), '.png') ? 'transparan' : '' }}">
       @else
         <div class="kosong">Belum ada foto hadiah</div>
       @endif
@@ -193,7 +225,7 @@
       <div class="cacah">{{ $jumlah }} dari {{ $prize->quota }} hadiah sudah diundi</div>
     </section>
 
-    <section class="kanan">
+    <section class="kanan {{ $padat ? 'padat' : '' }}">
       <h2>Selamat kepada</h2>
 
       <div class="daftar-menang">
@@ -201,7 +233,7 @@
           <div class="menang {{ $w->is_claimed ? 'diambil' : '' }}">
             <span class="nomor">{{ $i + 1 }}</span>
             <span class="rincian">
-              <span class="nama">{{ $w->participant->name }}</span>
+              <span class="nama">{{ $tulis($w->participant->name) }}</span>
               @php
                 $p = $w->participant;
                 $ket = match ($settings['caption']) {

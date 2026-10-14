@@ -12,7 +12,7 @@ class SettingController extends Controller
     public const KEYS = [
         'event_title', 'event_subtitle', 'background_path', 'background_color',
         'logo_left_path', 'logo_right_path', 'name_columns', 'spin_duration',
-        'one_win_per_person', 'show_nip', 'name_caption', 'winner_refresh', 'lock_screen_menu', 'board_mode', 'auto_stop',
+        'one_win_per_person', 'show_nip', 'name_caption', 'winner_refresh', 'show_title', 'name_case', 'lock_screen_menu', 'board_mode', 'auto_stop',
         'sound_enabled', 'spin_sound_path', 'win_sound_path', 'stop_style',
         'overflow_mode', 'min_font', 'draw_moment', 'layout_mode',
     ];
@@ -34,6 +34,7 @@ class SettingController extends Controller
             'name_columns'     => ['required', 'regex:/^(auto|10|[1-9])$/'],
             'layout_mode'      => ['required', 'in:otomatis,tegak,samping'],
             'name_caption'     => ['required', 'in:tidak,nip,unit,keduanya'],
+            'name_case'        => ['required', 'in:asli,kapital,awal'],
             'winner_refresh'   => ['required', 'integer', 'min:0', 'max:300'],
             'board_mode'       => ['required', 'in:daftar,kosong'],
             'stop_style'       => ['required', 'in:langsung,melambat'],
@@ -55,6 +56,7 @@ class SettingController extends Controller
             'draw_moment'   => 'waktu pengundian',
             'layout_mode'   => 'tata letak',
             'name_caption'  => 'keterangan di bawah nama',
+            'name_case'     => 'penulisan nama',
             'winner_refresh' => 'penyegaran layar pemenang',
             'min_font'      => 'ukuran huruf minimal',
             'spin_duration' => 'durasi putaran',
@@ -80,7 +82,7 @@ class SettingController extends Controller
             }
         }
 
-        foreach (['event_title', 'event_subtitle', 'background_color', 'name_columns', 'board_mode', 'stop_style', 'overflow_mode', 'min_font', 'draw_moment', 'layout_mode', 'name_caption', 'winner_refresh'] as $key) {
+        foreach (['event_title', 'event_subtitle', 'background_color', 'name_columns', 'board_mode', 'stop_style', 'overflow_mode', 'min_font', 'draw_moment', 'layout_mode', 'name_caption', 'winner_refresh', 'name_case'] as $key) {
             Setting::put($key, $data[$key] ?? null);
         }
 
@@ -89,6 +91,7 @@ class SettingController extends Controller
         Setting::put('sound_enabled', $request->boolean('sound_enabled') ? '1' : '');
 
         Setting::put('one_win_per_person', $request->boolean('one_win_per_person') ? '1' : '');
+        Setting::put('show_title', $request->boolean('show_title') ? '1' : '');
         Setting::put('lock_screen_menu', $request->boolean('lock_screen_menu') ? '1' : '');
 
         return back()->with('status', 'Tampilan layar undian diperbarui.');

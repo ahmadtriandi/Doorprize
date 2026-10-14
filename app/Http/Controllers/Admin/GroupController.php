@@ -155,7 +155,9 @@ class GroupController extends Controller
     public function bulkMembers(Request $request, ExclusionGroup $group)
     {
         $request->validate([
-            'daftar' => ['required', 'string', 'max:50000'],
+            // Sekitar 25.000 NIP. Batasnya ada supaya request raksasa tidak
+            // membuat proses impor menggantung, bukan karena keterbatasan data.
+            'daftar' => ['required', 'string', 'max:500000'],
         ], [], ['daftar' => 'daftar peserta']);
 
         $baris = collect(preg_split('/[\r\n,;\t]+/', $request->input('daftar')))
