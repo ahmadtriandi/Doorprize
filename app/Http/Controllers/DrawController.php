@@ -110,17 +110,24 @@ class DrawController extends Controller
      * Panitia bisa menguncinya lewat Tampilan layar kalau layar dipasang
      * di tempat yang bisa disentuh siapa saja.
      */
-    public function select(Prize $prize)
+    public function select(Request $request, Prize $prize)
     {
         $terkunci = (bool) Setting::get('lock_screen_menu', '');
 
-        if ($terkunci && ! session('doorprize_admin')) {
+        if ($terkunci && ! session('doorprize_admin') && ! session('doorprize_operator')) {
             return redirect()->route('draw')
-                ->with('error', 'Menu layar dikunci. Masuk sebagai panitia untuk mengganti hadiah.');
+                ->with('error', 'Menu layar dikunci. Masuk sebagai panitia atau operator untuk mengganti hadiah.');
         }
 
         Prize::where('is_selected', true)->update(['is_selected' => false]);
         $prize->update(['is_selected' => true]);
+
+        // Dari halaman operator, tetap di halaman itu; layar proyektor biasanya
+        // terbuka di tab atau komputer lain dan cukup dimuat ulang.
+        if ($request->input('kembali') === 'operator') {
+            return redirect()->route('operator.home')
+                ->with('status', "Layar undian sekarang menampilkan {$prize->name}. Muat ulang layar proyektor.");
+        }
 
         return redirect()->route('draw');
     }

@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WinnerController;
 use App\Http\Controllers\DrawController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\OperatorController;
+use App\Http\Middleware\OperatorAuth;
 use Illuminate\Support\Facades\Route;
 
 // ---------- Layar undian (dibuka di proyektor, tanpa login) ----------
@@ -25,6 +27,12 @@ Route::post('/sesi/{sesi}/undi', [DrawController::class, 'sessionSpin'])->name('
 Route::get('/masuk', [LoginController::class, 'show'])->name('login');
 Route::post('/masuk', [LoginController::class, 'store'])->middleware('throttle:10,1');
 Route::post('/keluar', [LoginController::class, 'destroy'])->name('logout');
+
+// ---------- Halaman operator (hanya membaca) ----------
+Route::middleware(OperatorAuth::class)->prefix('operator')->name('operator.')->group(function () {
+    Route::get('/', [OperatorController::class, 'index'])->name('home');
+    Route::get('pemenang', [OperatorController::class, 'winners'])->name('winners');
+});
 
 // ---------- Dashboard panitia ----------
 Route::middleware('admin')->prefix('panel')->name('admin.')->group(function () {

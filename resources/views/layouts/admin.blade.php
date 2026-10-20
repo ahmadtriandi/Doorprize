@@ -93,19 +93,27 @@
 <div class="rangka">
   <aside class="sisi">
     <div class="merek">
-      <b>Panel Doorprize</b>
+      <b>{{ session('doorprize_admin') ? 'Panel Doorprize' : 'Operator Doorprize' }}</b>
       <span>{{ \App\Models\Setting::get('event_title', 'Excellent Together') }}</span>
     </div>
     <nav>
       @php $r = request()->route()->getName(); @endphp
-      <a href="{{ route('admin.dashboard') }}" class="{{ $r === 'admin.dashboard' ? 'aktif' : '' }}">Ringkasan</a>
-      <a href="{{ route('admin.participants.index') }}" class="{{ str_starts_with($r, 'admin.participants') ? 'aktif' : '' }}">Peserta</a>
-      <a href="{{ route('admin.prizes.index') }}" class="{{ str_starts_with($r, 'admin.prizes') ? 'aktif' : '' }}">Hadiah</a>
-      <a href="{{ route('admin.sessions.index') }}" class="{{ str_starts_with($r, 'admin.sessions') ? 'aktif' : '' }}">Sesi undian</a>
-      <a href="{{ route('admin.groups.index') }}" class="{{ str_starts_with($r, 'admin.groups') ? 'aktif' : '' }}">Grup pengecualian</a>
-      <a href="{{ route('admin.winners.index') }}" class="{{ str_starts_with($r, 'admin.winners') ? 'aktif' : '' }}">Pemenang</a>
-      <a href="{{ route('admin.settings.edit') }}" class="{{ str_starts_with($r, 'admin.settings') ? 'aktif' : '' }}">Tampilan layar</a>
+      @if(session('doorprize_admin'))
+        <a href="{{ route('admin.dashboard') }}" class="{{ $r === 'admin.dashboard' ? 'aktif' : '' }}">Ringkasan</a>
+        <a href="{{ route('admin.participants.index') }}" class="{{ str_starts_with($r, 'admin.participants') ? 'aktif' : '' }}">Peserta</a>
+        <a href="{{ route('admin.prizes.index') }}" class="{{ str_starts_with($r, 'admin.prizes') ? 'aktif' : '' }}">Hadiah</a>
+        <a href="{{ route('admin.sessions.index') }}" class="{{ str_starts_with($r, 'admin.sessions') ? 'aktif' : '' }}">Sesi undian</a>
+        <a href="{{ route('admin.groups.index') }}" class="{{ str_starts_with($r, 'admin.groups') ? 'aktif' : '' }}">Grup pengecualian</a>
+        <a href="{{ route('admin.winners.index') }}" class="{{ str_starts_with($r, 'admin.winners') ? 'aktif' : '' }}">Pemenang</a>
+        <a href="{{ route('admin.settings.edit') }}" class="{{ str_starts_with($r, 'admin.settings') ? 'aktif' : '' }}">Tampilan layar</a>
+      @else
+        <a href="{{ route('operator.home') }}" class="{{ $r === 'operator.home' ? 'aktif' : '' }}">Layar undian</a>
+        <a href="{{ route('operator.winners') }}" class="{{ $r === 'operator.winners' ? 'aktif' : '' }}">Daftar pemenang</a>
+      @endif
       <a href="{{ route('draw') }}" target="_blank">Buka layar undian ↗</a>
+      @foreach(\App\Models\DrawSession::orderBy('sort_order')->orderBy('id')->get(['id', 'name']) as $sesiNav)
+        <a href="{{ route('draw.session', $sesiNav) }}" target="_blank">Buka {{ $sesiNav->name }} ↗</a>
+      @endforeach
     </nav>
     <div class="kaki">
       <form method="post" action="{{ route('logout') }}">@csrf<button>Keluar</button></form>

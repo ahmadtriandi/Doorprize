@@ -283,6 +283,8 @@
     <button type="button" onclick="location.reload()" role="menuitem">Muat ulang daftar</button>
     @if(session('doorprize_admin'))
       <a href="{{ route('admin.winners.index') }}" role="menuitem">Kelola pemenang</a>
+    @elseif(session('doorprize_operator'))
+      <a href="{{ route('operator.winners') }}" role="menuitem">Daftar pemenang operator</a>
     @endif
   </div>
 </div>

@@ -7,6 +7,16 @@
       };
   };
 
+  /** Keterangan di bawah nama, mengikuti pengaturan "Keterangan di bawah nama". */
+  $ket = function ($w) use ($settings) {
+      return match ($settings['caption']) {
+          'nip'      => $w['nip'],
+          'unit'     => $w['unit'],
+          'keduanya' => trim($w['nip'].($w['unit'] ? ' · '.$w['unit'] : '')),
+          default    => null,
+      };
+  };
+
   $urlUndi   = route('draw.session.spin', $sesi);
   $totalKotak = 0;
   $kosong     = 0;
@@ -51,7 +61,7 @@
   .kepala{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px}
   .kepala .kiri{justify-self:start}
   .kepala .kanan{justify-self:end}
-  .logo{max-height:60px;max-width:220px;object-fit:contain}
+  .logo{max-height:140px;max-width:220px;object-fit:contain}
   .judul-sesi{
     font-size:clamp(28px,4.4vh,54px);font-weight:800;letter-spacing:.02em;line-height:1;
     text-shadow:0 3px 10px rgba(0,0,0,.45);text-align:center;
@@ -102,6 +112,9 @@
     flex:1;min-width:0;max-height:100%;overflow:hidden;font-weight:700;
     white-space:normal;overflow-wrap:anywhere;line-height:1.05;
   }
+  .sel .nm .n{display:block}
+  .sel .nm .k{display:block;font-size:.62em;font-weight:600;color:#7C3AED;margin-top:.1em;line-height:1.1}
+  .sel .nm .k:empty{display:none}
   .sel.putar .nm{color:#7C3AED;filter:blur(1.6px)}
   .sel.terisi{background:var(--krem)}
   .sel.terisi .no{opacity:.8;color:#BE185D}
@@ -187,7 +200,7 @@
                   @php $w = $p['winners'][$i] ?? null; @endphp
                   <div class="sel {{ $w ? 'terisi' : '' }}" data-hadiah="{{ $p['id'] }}" data-urut="{{ $i }}">
                     <span class="no">{{ $i + 1 }}.</span>
-                    <span class="nm">{{ $w ? $tulis($w['name']) : '' }}</span>
+                    <span class="nm"><span class="n">{{ $w ? $tulis($w['name']) : '' }}</span><small class="k">{{ $w ? $ket($w) : '' }}</small></span>
                   </div>
                 @endfor
               </div>
@@ -226,6 +239,8 @@
     <button type="button" onclick="location.reload()">Muat ulang</button>
     @if(session('doorprize_admin'))
       <a href="{{ route('admin.sessions.show', $sesi) }}">Atur sesi ini</a>
+    @elseif(session('doorprize_operator'))
+      <a href="{{ route('operator.home') }}">Halaman operator</a>
     @endif
   </div>
 </div>
@@ -236,6 +251,20 @@
   const token    = document.querySelector('meta[name=csrf-token]').content;
   const pool     = @json($pool);
   const gayaNama = @json($settings['case']);
+  const caption  = @json($settings['caption']); // 'tidak', 'nip', 'unit', atau 'keduanya'
+
+  function keterangan(w) {
+    if (caption === 'nip') return w.nip || '';
+    if (caption === 'unit') return w.unit || '';
+    if (caption === 'keduanya') return [w.nip, w.unit].filter(Boolean).join(' · ');
+    return '';
+  }
+
+  /** Isi satu kotak: nama di atas, keterangan kecil di bawahnya. */
+  function isiKotak(s, nama, ket = '') {
+    s.querySelector('.n').textContent = nama;
+    s.querySelector('.k').textContent = ket;
+  }
   const saatUndi = @json($settings['draw_moment']);
   const nyalaSuara   = {{ $settings['sound'] ? 'true' : 'false' }};
   const berkasPutar  = @json($settings['spin_sound']);
@@ -420,7 +449,7 @@
 
     kosong.forEach(s => s.classList.add('putar'));
     timer = setInterval(() => {
-      kosong.forEach(s => { s.querySelector('.nm').textContent = tulisNama(acak().name); });
+      kosong.forEach(s => isiKotak(s, tulisNama(acak().name)));
     }, 70);
   }
 
@@ -435,7 +464,7 @@
     Suara.berhenti();
 
     const sedangPutar = [...papan.querySelectorAll('.sel.putar')];
-    sedangPutar.forEach(s => { s.classList.remove('putar'); s.querySelector('.nm').textContent = ''; });
+    sedangPutar.forEach(s => { s.classList.remove('putar'); isiKotak(s, ''); });
 
     if (!data.ok) {
       tampilkanKabar(data.message || 'Undian gagal dijalankan.');
@@ -448,7 +477,7 @@
       hadiah.winners.forEach((w, i) => {
         const s = kotak[i];
         if (!s) return;
-        s.querySelector('.nm').textContent = tulisNama(w.name);
+        isiKotak(s, tulisNama(w.name), keterangan(w));
         s.title = [w.name, w.nip, w.unit].filter(Boolean).join(' · ');
         s.classList.add('terisi', 'baru');
       });
