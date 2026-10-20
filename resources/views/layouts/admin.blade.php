@@ -101,6 +101,7 @@
       <a href="{{ route('admin.dashboard') }}" class="{{ $r === 'admin.dashboard' ? 'aktif' : '' }}">Ringkasan</a>
       <a href="{{ route('admin.participants.index') }}" class="{{ str_starts_with($r, 'admin.participants') ? 'aktif' : '' }}">Peserta</a>
       <a href="{{ route('admin.prizes.index') }}" class="{{ str_starts_with($r, 'admin.prizes') ? 'aktif' : '' }}">Hadiah</a>
+      <a href="{{ route('admin.sessions.index') }}" class="{{ str_starts_with($r, 'admin.sessions') ? 'aktif' : '' }}">Sesi undian</a>
       <a href="{{ route('admin.groups.index') }}" class="{{ str_starts_with($r, 'admin.groups') ? 'aktif' : '' }}">Grup pengecualian</a>
       <a href="{{ route('admin.winners.index') }}" class="{{ str_starts_with($r, 'admin.winners') ? 'aktif' : '' }}">Pemenang</a>
       <a href="{{ route('admin.settings.edit') }}" class="{{ str_starts_with($r, 'admin.settings') ? 'aktif' : '' }}">Tampilan layar</a>

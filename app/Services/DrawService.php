@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DrawSession;
 use App\Models\Participant;
 use App\Models\Prize;
 use App\Models\PrizePick;
@@ -134,6 +135,44 @@ class DrawService
                 'drawn_at'       => now(),
             ])->load('participant'))->values();
         });
+    }
+
+    /**
+     * Undi semua hadiah dalam satu sesi sekaligus.
+     *
+     * Tiap hadiah tetap diundi lewat spin() yang sama, satu per satu dalam satu
+     * transaksi. Karena pemenang hadiah sebelumnya sudah tercatat saat hadiah
+     * berikutnya diundi, aturan "satu orang hanya boleh menang sekali", grup
+     * pengecualian, dan posisi terkunci tetap berlaku di antara hadiah-hadiah
+     * dalam sesi yang sama.
+     *
+     * Hadiah yang tidak punya peserta memenuhi syarat dilewati dan dilaporkan,
+     * bukan menggagalkan seluruh sesi.
+     *
+     * @return array{0: array<int, Collection>, 1: array<int, string>}
+     */
+    public function spinSession(DrawSession $sesi): array
+    {
+        $hasil = [];
+        $peringatan = [];
+
+        DB::transaction(function () use ($sesi, &$hasil, &$peringatan) {
+            foreach ($sesi->prizes()->get() as $prize) {
+                $sisa = $prize->remaining_slot;
+
+                if ($sisa < 1) {
+                    continue;
+                }
+
+                try {
+                    $hasil[$prize->id] = $this->spin($prize, $sisa);
+                } catch (RuntimeException $e) {
+                    $peringatan[] = $prize->name.': '.$e->getMessage();
+                }
+            }
+        });
+
+        return [$hasil, $peringatan];
     }
 
     /**

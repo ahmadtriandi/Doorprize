@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\Admin\PickController;
 use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\PrizeController;
+use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WinnerController;
 use App\Http\Controllers\DrawController;
@@ -17,6 +18,8 @@ Route::post('/undi/{prize}', [DrawController::class, 'spin'])->name('draw.spin')
 Route::get('/undi/{prize}/state', [DrawController::class, 'state'])->name('draw.state');
 Route::post('/pilih/{prize}', [DrawController::class, 'select'])->name('draw.select');
 Route::get('/pemenang', [DrawController::class, 'winners'])->name('draw.winners');
+Route::get('/sesi/{sesi}', [DrawController::class, 'session'])->name('draw.session');
+Route::post('/sesi/{sesi}/undi', [DrawController::class, 'sessionSpin'])->name('draw.session.spin');
 
 // ---------- Masuk panitia ----------
 Route::get('/masuk', [LoginController::class, 'show'])->name('login');
@@ -50,6 +53,14 @@ Route::middleware('admin')->prefix('panel')->name('admin.')->group(function () {
     Route::post('hadiah/{prize}/pemenang/massal', [PickController::class, 'bulk'])->name('picks.bulk');
     Route::put('hadiah/{prize}/pemenang/{pick}', [PickController::class, 'reposition'])->name('picks.reposition');
     Route::delete('hadiah/{prize}/pemenang/{pick}', [PickController::class, 'destroy'])->name('picks.destroy');
+
+    // Sesi undian: banyak hadiah sekali undi
+    Route::get('sesi', [SessionController::class, 'index'])->name('sessions.index');
+    Route::post('sesi', [SessionController::class, 'store'])->name('sessions.store');
+    Route::get('sesi/{sesi}', [SessionController::class, 'show'])->name('sessions.show');
+    Route::put('sesi/{sesi}', [SessionController::class, 'update'])->name('sessions.update');
+    Route::delete('sesi/{sesi}', [SessionController::class, 'destroy'])->name('sessions.destroy');
+    Route::delete('sesi/{sesi}/reset', [SessionController::class, 'reset'])->name('sessions.reset');
 
     // Grup pengecualian
     Route::get('grup', [GroupController::class, 'index'])->name('groups.index');

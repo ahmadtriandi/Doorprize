@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DrawSession;
 use App\Models\Prize;
 use App\Models\Setting;
 use App\Services\DrawService;
@@ -148,6 +149,92 @@ class DrawController extends Controller
             'prizes'   => $prizes,
             'winners'  => $winners,
             'settings' => $this->tampilan(),
+        ]);
+    }
+
+    /**
+     * Layar sesi undian: semua hadiah dalam sesi tampil sekaligus seperti tabel,
+     * dan satu kali Start-Stop mengisi seluruh kotak yang masih kosong.
+     */
+    public function session(DrawSession $sesi)
+    {
+        $sesi->load(['prizes.winners' => fn ($q) => $q->orderBy('id'), 'prizes.winners.participant']);
+
+        $baris = max(1, min(20, (int) $sesi->rows_per_column));
+
+        $kelompok = $sesi->baris()->map(function ($b) use ($baris) {
+            return ['label' => $b['label'], 'prizes' => $b['prizes']->map(function ($p) use ($baris) {
+                $kuota = max(1, (int) $p->quota);
+
+                return [
+                    'id'      => $p->id,
+                    'name'    => $p->name,
+                    'quota'   => $kuota,
+                    'subcols' => (int) ceil($kuota / $baris),
+                    'rows'    => min($baris, $kuota),
+                    'winners' => $p->winners->map(fn ($w) => [
+                        'id'   => $w->participant->id,
+                        'name' => $w->participant->name,
+                        'nip'  => $w->participant->nip,
+                        'unit' => $w->participant->department,
+                    ])->values()->all(),
+                ];
+            })->values()];
+        });
+
+        // Nama untuk animasi berputar. Diambil dari peserta yang masih berhak di
+        // hadiah mana pun dalam sesi; hasil undian sesungguhnya tetap ditentukan
+        // server saat tombol ditekan.
+        $pool = $sesi->prizes
+            ->filter(fn ($p) => $p->remaining_slot > 0)
+            ->flatMap(fn ($p) => $this->draw->eligible($p))
+            ->unique('id')
+            ->shuffle()
+            ->take(600)
+            ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])
+            ->values();
+
+        $sessions = DrawSession::orderBy('sort_order')->orderBy('id')->get();
+
+        return view('draw.session', [
+            'sesi'     => $sesi,
+            'kelompok' => $kelompok,
+            'pool'     => $pool,
+            'sessions' => $sessions,
+            'settings' => $this->tampilan(),
+        ]);
+    }
+
+    /** Undi seluruh kotak kosong dalam satu sesi. */
+    public function sessionSpin(DrawSession $sesi)
+    {
+        try {
+            [$hasil, $peringatan] = $this->draw->spinSession($sesi);
+        } catch (Throwable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        if (empty($hasil)) {
+            return response()->json([
+                'ok'      => false,
+                'message' => $peringatan
+                    ? implode(' ', $peringatan)
+                    : 'Semua hadiah dalam sesi ini sudah habis diundi.',
+            ], 422);
+        }
+
+        return response()->json([
+            'ok'       => true,
+            'warnings' => $peringatan,
+            'prizes'   => collect($hasil)->map(fn ($winners, $prizeId) => [
+                'id'      => $prizeId,
+                'winners' => $winners->map(fn ($w) => [
+                    'id'   => $w->participant->id,
+                    'name' => $w->participant->name,
+                    'nip'  => $w->participant->nip,
+                    'unit' => $w->participant->department,
+                ])->values(),
+            ])->values(),
         ]);
     }
 
