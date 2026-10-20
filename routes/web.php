@@ -32,6 +32,12 @@ Route::post('/keluar', [LoginController::class, 'destroy'])->name('logout');
 Route::middleware(OperatorAuth::class)->prefix('operator')->name('operator.')->group(function () {
     Route::get('/', [OperatorController::class, 'index'])->name('home');
     Route::get('pemenang', [OperatorController::class, 'winners'])->name('winners');
+
+    // Operator boleh membatalkan pemenang, mengulang satu hadiah, dan
+    // menghapus seluruh pemenang. "reset-semua" harus di atas {winner}.
+    Route::delete('pemenang/reset-semua', [\App\Http\Controllers\Admin\WinnerController::class, 'resetAll'])->name('winners.resetAll');
+    Route::delete('pemenang/hadiah/{prize}/reset', [\App\Http\Controllers\Admin\WinnerController::class, 'reset'])->name('winners.reset');
+    Route::delete('pemenang/{winner}', [\App\Http\Controllers\Admin\WinnerController::class, 'destroy'])->name('winners.destroy');
 });
 
 // ---------- Dashboard panitia ----------
