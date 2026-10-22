@@ -110,7 +110,7 @@
         <a href="{{ route('operator.home') }}" class="{{ $r === 'operator.home' ? 'aktif' : '' }}">Layar undian</a>
         <a href="{{ route('operator.winners') }}" class="{{ $r === 'operator.winners' ? 'aktif' : '' }}">Daftar pemenang</a>
       @endif
-      <a href="{{ route('draw') }}" target="_blank">Buka layar undian ↗</a>
+      {{-- <a href="{{ route('draw') }}" target="_blank">Buka layar undian ↗</a> --}}
       @foreach(\App\Models\DrawSession::orderBy('sort_order')->orderBy('id')->get(['id', 'name']) as $sesiNav)
         <a href="{{ route('draw.session', $sesiNav) }}" target="_blank">Buka {{ $sesiNav->name }} ↗</a>
       @endforeach

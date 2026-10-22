@@ -15,14 +15,14 @@
 </div>
 
 <div class="baris">
-  <div class="kotak">
+  {{-- <div class="kotak">
     <h2>Layar utama</h2>
     <p style="font-size:14px;margin-bottom:14px">
       Undian satu hadiah per putaran. Pindah hadiah lewat menu di pojok kiri bawah layar.
     </p>
     <a class="tombol" href="{{ route('draw') }}" target="_blank">Buka layar undian</a>
     <a class="tombol garis" href="{{ route('draw.winners') }}" target="_blank">Buka layar pemenang</a>
-  </div>
+  </div> --}}
 
   <div class="kotak">
     <h2>Sesi undian</h2>
